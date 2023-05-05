@@ -34,21 +34,21 @@ TURNS = [
     45,  # 19
     45,  # 20
     0,  # 21
-    0,  # 22
-    90,  # 23
-    0,  # 24
-    0,  # 25
-    45,  # 26
+    #0, 
+    90,  # 22
+    0,  # 23
+    #0, 
+    45,  # 24
+    90,  # 25
+    0,  #26
     90,  # 27
-    0,  # 28
-    90,  # 29
-    45,  # 30
+    45,  # 28
+    0,  # 29
+    #0,  
+    90,  # 30
     0,  # 31
-    0,  # 32
-    90,  # 33
-    0,  # 34
-    0,  # 35
-    45,  # 36
+    #0, 
+    45,  # 32
 ]
 
 # Hardware definitions
@@ -80,9 +80,10 @@ def deposit(col) -> None:
     """Raise the sort, move backwards, then lower the sort."""
     db.straight(100)
     about_turn()
-    db.straight(-50)
-    sort_motor.run_angle(100, clock_angle(sort_motor.angle() - (colors[col] * 90) + 30))
-    db.straight(150)
+    # db.straight(-50)
+    print()
+    sort_motor.run_angle(100, clock_angle((colors[col] * 90 + 10) - (sort_motor.angle())))
+    db.straight(75)
     sort_motor.run_angle(100, 45)
     colors[col] = -1
 
@@ -92,7 +93,7 @@ def drive(x) -> None:
     l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
     r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
     # db.drive((1 - abs(l_co - r_co)) * 350, (l_co - r_co) * 275)
-    db.drive(x, (l_co - r_co) * x * 0.80)
+    db.drive(x, (l_co - r_co) * x * 0.85)
 
 
 def about_turn() -> None:
@@ -102,13 +103,15 @@ def about_turn() -> None:
 
 def clock_angle(x):
     if x < 0:
+        print(360 + x)
         return 360 + x
     else:
+        print(x)
         return x
 
 
 if __name__ == "__main__":
-    colors = {"RED": -1, "YELLOW": -1, "GREEN": -1, "BLUE": -1}
+    colors = {"RED": 1, "YELLOW": 3, "GREEN": 2, "BLUE": 0}
     curr_angle = 0
     i = 0
     speed = 180
@@ -127,8 +130,8 @@ if __name__ == "__main__":
         l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
         r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
         # print(l_co, r_co)
-
-        if l_co > 0.6 and r_co < 0.05 and ons and straight > 2000:
+        # print(ons, straight)
+        if l_co > 0.58 and r_co < 0.05 and ons and straight > 500:
             # We can merge this with the If below
             print("funny right turn!?!?!? ")
             db.straight(50, then=Stop.NONE)
@@ -138,7 +141,7 @@ if __name__ == "__main__":
             straight = 0
             i += 1
 
-        if l_co + r_co < 0.08:
+        if l_co + r_co < 0.1:
             if i == 4:
                 db.straight(10, then=Stop.NONE)
             else:
@@ -160,20 +163,19 @@ if __name__ == "__main__":
                 # print("speed")
                 speed = 180
 
-            if i == 9 or i == 26:
+            if i == 9 or i == 24:
                 print("start the straight")
                 straight = 0
                 ons = True
 
             if i == 21:
-                deposit("green")
-            if i == 24:
-                deposit("red")
+                deposit("GREEN")
+            if i == 23:
+                deposit("RED")
+            if i == 29:
+                deposit("BLUE")
             if i == 31:
-                deposit("blue")
-            if i == 34:
-                deposit("yellow")
-
+                deposit("YELLOW")
             i += 1
         
         drive(speed)
@@ -186,7 +188,8 @@ if __name__ == "__main__":
         r_col = r_sensor.color()
         c_col = c_sensor.color()
 
-        color = c_col.name
+        color = str(c_col)[6:]
+        #print(color)
         if color in ["RED", "YELLOW", 'GREEN', 'BLUE']:
             db.stop()
             db.straight(-10)
