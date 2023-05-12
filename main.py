@@ -51,6 +51,8 @@ TURNS = [
     45,  # 32
 ]
 
+
+
 # Hardware definitions
 hub = PrimeHub()
 left_motor = Motor(
@@ -87,6 +89,9 @@ def pick_up() -> None:
     db.straight(-155)
     sort_motor.run_angle(250, 50)
 
+def abort() -> None:
+    about_turn()
+    db.straight(50)
 
 def deposit(col) -> None:
     """Raise the sort, move backwards, then lower the sort."""
@@ -151,14 +156,22 @@ if __name__ == "__main__":
         l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
         r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
         #print(l_sensor.reflection(), r_sensor.reflection())
-        print(round(l_co, 3), round(r_co, 3))
+        #print(round(l_co, 3), round(r_co, 3))
         #print(ons, straight)
+
+        
 
         if(l_sensor.color() != Color.NONE and l_sensor.color() != Color.WHITE and r_sensor.color() != Color.NONE and r_sensor.color() != Color.WHITE):
             diff_color += 1
         else:
             diff_color = 0
 
+        if diff_color >= 80 and i > 1:
+            diff_color = 0
+            abort()
+            i += 0
+
+        print(diff_color)
         
         if l_co > 0.6 and r_co < 0.08 and ons and straight > 1000:
             # We can merge this with the If below
