@@ -4,7 +4,6 @@ from pybricks.hubs import PrimeHub
 from pybricks.pupdevices import Motor, ColorSensor
 from pybricks.parameters import Color, Direction, Port, Stop
 from pybricks.robotics import DriveBase
-from pybricks.tools import wait
 
 L_CO_BLACK = 12
 R_CO_BLACK = 12
@@ -34,23 +33,22 @@ TURNS = [
     45,  # 19
     45,  # 20
     0,  # 21
-    #0, 
+    # 0,
     90,  # 22
     0,  # 23
-    #0, 
+    # 0,
     45,  # 24
     90,  # 25
-    0,  #26
+    0,  # 26
     90,  # 27
     45,  # 28
     0,  # 29
-    #0,  
+    # 0,
     90,  # 30
     0,  # 31
-    #0, 
+    # 0,
     45,  # 32
 ]
-
 
 
 # Hardware definitions
@@ -71,27 +69,22 @@ db = DriveBase(left_motor, right_motor, 88, 207)
 db.settings(straight_speed=200)
 
 c_sensor.detectable_colors(
-    (
-        Color.RED,
-        Color.YELLOW,
-        Color.GREEN,
-        Color.BLUE,
-        Color.BLACK,
-        Color.NONE
-    )
+    (Color.RED, Color.YELLOW, Color.GREEN, Color.BLUE, Color.BLACK, Color.NONE)
 )
 
 
 def pick_up() -> None:
     """Pick up a cube from a colored area."""
-    #hub.speaker.beep(frequency=523.2, duration=200)
+    # hub.speaker.beep(frequency=523.2, duration=200)
     sort_motor.run_angle(250, 40)
     db.straight(-155)
     sort_motor.run_angle(250, 50)
 
+
 def abort() -> None:
     about_turn()
     db.straight(50)
+
 
 def deposit(col) -> None:
     """Raise the sort, move backwards, then lower the sort."""
@@ -99,7 +92,9 @@ def deposit(col) -> None:
     about_turn()
     # db.straight(-50)
     print()
-    sort_motor.run_angle(100, clock_angle((colors[col] * 90 + 10) - (sort_motor.angle())))
+    sort_motor.run_angle(
+        100, clock_angle((colors[col] * 90 + 10) - (sort_motor.angle()))
+    )
     db.straight(75)
     sort_motor.run_angle(100, 40)
     colors[col] = -1
@@ -112,9 +107,8 @@ def drive(x) -> None:
     r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
     # db.drive((1 - abs(l_co - r_co)) * 350, (l_co - r_co) * 275)
     if power:
-        
         sensi = 0.5
-    #print(sensi)
+    # print(sensi)
     db.drive(x, (l_co - r_co) * x * sensi)
 
 
@@ -144,7 +138,6 @@ if __name__ == "__main__":
     power = True
     diff_color = 0
     sort_motor.run_target(100, -15)
-    
 
     while False:
         # l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
@@ -155,13 +148,16 @@ if __name__ == "__main__":
             sort_motor.reset_angle(sort_motor.angle() % 360)
         l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
         r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
-        #print(l_sensor.reflection(), r_sensor.reflection())
-        #print(round(l_co, 3), round(r_co, 3))
-        #print(ons, straight)
+        # print(l_sensor.reflection(), r_sensor.reflection())
+        # print(round(l_co, 3), round(r_co, 3))
+        # print(ons, straight)
 
-        
-
-        if(l_sensor.color() != Color.NONE and l_sensor.color() != Color.WHITE and r_sensor.color() != Color.NONE and r_sensor.color() != Color.WHITE):
+        if (
+            l_sensor.color() != Color.NONE
+            and l_sensor.color() != Color.WHITE
+            and r_sensor.color() != Color.NONE
+            and r_sensor.color() != Color.WHITE
+        ):
             diff_color += 1
         else:
             diff_color = 0
@@ -172,7 +168,7 @@ if __name__ == "__main__":
             i += 0
 
         print(diff_color)
-        
+
         if l_co > 0.6 and r_co < 0.08 and ons and straight > 1000:
             # We can merge this with the If below
             print("funny right turn!?!?!? ")
@@ -190,14 +186,14 @@ if __name__ == "__main__":
                 onPower = 0
                 speed = 250
             hub.display.number(i)
-            #hub.speaker.beep(frequency=493.8+(30*i), duration=10)
+            # hub.speaker.beep(frequency=493.8+(30*i), duration=10)
             if i == 4:
                 db.straight(10, then=Stop.NONE)
             else:
                 db.straight(45, then=Stop.NONE)
 
             if TURNS[i] != 0:
-                #db.straight(15, then=Stop.NONE)
+                # db.straight(15, then=Stop.NONE)
                 print("turning...", i)
                 db.stop()
                 db.turn(TURNS[i])
@@ -206,7 +202,12 @@ if __name__ == "__main__":
                 db.straight(5, then=Stop.NONE)
                 print("unturn...", i)
 
-            if (i >= 3 and i <= 8) or (i >= 13 and i <= 18) or (i >= 20 and i <= 23) or (i >= 28 and i <= 31):
+            if (
+                (i >= 3 and i <= 8)
+                or (i >= 13 and i <= 18)
+                or (i >= 20 and i <= 23)
+                or (i >= 28 and i <= 31)
+            ):
                 print("slow")
                 onPower = 0
                 speed = 150
@@ -216,14 +217,14 @@ if __name__ == "__main__":
                 power = True
 
             if i == 9 or i == 24:
-                #db.straight(15, then=Stop.NONE)
+                # db.straight(15, then=Stop.NONE)
                 print("start the straight")
                 straight = 0
                 ons = True
-            #elif i == 10 or i == 11 or i == 19 or i == 26 or i == 27:
-               # speed = 180
-            #else:
-                #speed = 180
+            # elif i == 10 or i == 11 or i == 19 or i == 26 or i == 27:
+            # speed = 180
+            # else:
+            # speed = 180
 
             if i == 21:
                 deposit("GREEN")
@@ -236,10 +237,10 @@ if __name__ == "__main__":
             i += 1
         if power:
             onPower += 1
-            if(onPower > 400 and speed < 375):
+            if onPower > 400 and speed < 375:
                 speed += 0.4
-        #print(speed, onPower)
-        #hub.speaker.beep(frequency=(speed)*5-500, duration=10)
+        # print(speed, onPower)
+        # hub.speaker.beep(frequency=(speed)*5-500, duration=10)
         drive(speed)
 
         if ons:
@@ -251,8 +252,8 @@ if __name__ == "__main__":
         c_col = c_sensor.color()
 
         color = str(c_col)[6:]
-        #print(color)
-        if color in ["RED", "YELLOW", 'GREEN', 'BLUE']:
+        # print(color)
+        if color in ["RED", "YELLOW", "GREEN", "BLUE"]:
             db.stop()
             db.straight(-10)
             about_turn()
