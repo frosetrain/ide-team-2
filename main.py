@@ -1,9 +1,28 @@
 """This is the code for IDE Team 2!!!!"""
 
+from csv import DictReader
+
+from os import system
+
 from pybricks.hubs import PrimeHub
-from pybricks.pupdevices import Motor, ColorSensor
-from pybricks.parameters import Color, Direction, Port, Stop
+from pybricks.parameters import Color, Colors, Direction, Port, Stop
+from pybricks.pupdevices import ColorSensor, Motor
 from pybricks.robotics import DriveBase
+
+import colorlog
+from logging import FileHandler
+
+handler = colorlog.StreamHandler()
+handler.setFormatter(colorlog.ColoredFormatter("%(log_color)s%(message)s"))
+filehandle = FileHandler("first.log")
+
+logger = colorlog.getLogger(__name__)
+logger.setLevel("DEBUG")
+logger.addHandler(handler)
+logger.addHandler(filehandle)
+
+
+system("clear")
 
 L_CO_BLACK = 12
 R_CO_BLACK = 12
@@ -75,6 +94,7 @@ c_sensor.detectable_colors(
 
 def pick_up() -> None:
     """Pick up a cube from a colored area."""
+    logger.info("Pick up")
     # hub.speaker.beep(frequency=523.2, duration=200)
     sort_motor.run_angle(250, 40)
     db.straight(-155)
@@ -88,10 +108,10 @@ def abort() -> None:
 
 def deposit(col) -> None:
     """Raise the sort, move backwards, then lower the sort."""
+    logger.info("Deposit")
     db.straight(100)
     about_turn()
     # db.straight(-50)
-    print()
     sort_motor.run_angle(
         100, clock_angle((colors[col] * 90 + 10) - (sort_motor.angle()))
     )
@@ -100,15 +120,15 @@ def deposit(col) -> None:
     colors[col] = -1
 
 
-def drive(x) -> None:
+def drive(x, l_co, r_co) -> None:
     """Do some line tracking."""
     sensi = 0.69
-    l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
-    r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
+    # l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
+    # r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
     # db.drive((1 - abs(l_co - r_co)) * 350, (l_co - r_co) * 275)
     if power:
         sensi = 0.5
-    # print(sensi)
+    # logger.debug(sensi)
     db.drive(x, (l_co - r_co) * x * sensi)
 
 
@@ -119,14 +139,21 @@ def about_turn() -> None:
 
 def clock_angle(x):
     if x < 0:
-        print(360 + x)
+        # logger.debug(360 + x)
         return 360 + x
     else:
-        print(x)
+        # logger.debug(x)
         return x
 
 
 if __name__ == "__main__":
+    seq = open("cases.csv", "r")
+    reader = DictReader(seq)
+    cases = []
+    for row in reader:
+        cases.append(row)
+    caseid = 0
+
     colors = {"RED": 1, "YELLOW": 3, "GREEN": 2, "BLUE": 0}
     curr_angle = 0
     i = 0
@@ -142,21 +169,36 @@ if __name__ == "__main__":
     while False:
         # l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
         # r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
-        print(l_sensor.reflection(), r_sensor.reflection())
+        logger.debug(l_sensor.reflection(), r_sensor.reflection())
     while True:
+        try:
+            case = cases[caseid]
+        except IndexError:
+            logger.debug("done")
+            exit()
+        logger.info(case)
+        l_co = float(case["l_ref"])
+        r_co = float(case["r_ref"])
+        l_col = Colors[case["l_col"]]
+        r_col = Colors[case["r_col"]]
+        c_col = case["c_col"]
+        # logger.debug(l_co, r_co, l_col, r_col, c_col)
+
         if sort_motor.angle() < 0 or sort_motor.angle() > 359:
             sort_motor.reset_angle(sort_motor.angle() % 360)
-        l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
-        r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
-        # print(l_sensor.reflection(), r_sensor.reflection())
-        # print(round(l_co, 3), round(r_co, 3))
-        # print(ons, straight)
+
+        # l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
+        # r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
+        # l_col = l_sensor.color()
+        # r_col = r_sensor.color()
+        # c_col = c_sensor.color()
+        # FIXME
 
         if (
-            l_sensor.color() != Color.NONE
-            and l_sensor.color() != Color.WHITE
-            and r_sensor.color() != Color.NONE
-            and r_sensor.color() != Color.WHITE
+            l_col != Color.NONE
+            and l_col != Color.WHITE
+            and r_col != Color.NONE
+            and r_col != Color.WHITE
         ):
             diff_color += 1
         else:
@@ -167,11 +209,11 @@ if __name__ == "__main__":
             abort()
             i += 0
 
-        print(diff_color)
+        # logger.debug(diff_color)
 
         if l_co > 0.6 and r_co < 0.08 and ons and straight > 1000:
             # We can merge this with the If below
-            print("funny right turn!?!?!? ")
+            logger.debug("funny right turn!?!?!? ")
             onPower = 0
             speed = 200
             db.straight(50, then=Stop.NONE)
@@ -185,7 +227,8 @@ if __name__ == "__main__":
             if power:
                 onPower = 0
                 speed = 250
-            hub.display.number(i)
+            # hub.display.number(i)
+            # FIXME
             # hub.speaker.beep(frequency=493.8+(30*i), duration=10)
             if i == 4:
                 db.straight(10, then=Stop.NONE)
@@ -194,13 +237,13 @@ if __name__ == "__main__":
 
             if TURNS[i] != 0:
                 # db.straight(15, then=Stop.NONE)
-                print("turning...", i)
+                logger.info("turning... " + str(i))
                 db.stop()
                 db.turn(TURNS[i])
                 # db.turn(90)
             else:
                 db.straight(5, then=Stop.NONE)
-                print("unturn...", i)
+                logger.info("unturn... " + str(i))
 
             if (
                 (i >= 3 and i <= 8)
@@ -208,17 +251,17 @@ if __name__ == "__main__":
                 or (i >= 20 and i <= 23)
                 or (i >= 28 and i <= 31)
             ):
-                print("slow")
+                logger.debug("slow")
                 onPower = 0
                 speed = 150
                 power = False
             else:
-                print("speed")
+                logger.debug("speed")
                 power = True
 
             if i == 9 or i == 24:
                 # db.straight(15, then=Stop.NONE)
-                print("start the straight")
+                logger.debug("start the straight")
                 straight = 0
                 ons = True
             # elif i == 10 or i == 11 or i == 19 or i == 26 or i == 27:
@@ -239,20 +282,17 @@ if __name__ == "__main__":
             onPower += 1
             if onPower > 400 and speed < 375:
                 speed += 0.4
-        # print(speed, onPower)
+        # logger.debug(speed, onPower)
         # hub.speaker.beep(frequency=(speed)*5-500, duration=10)
-        drive(speed)
+        drive(speed, l_co, r_co)
 
         if ons:
             straight += 1
-            # print(straight)
+            # logger.debug(straight)
 
-        l_col = l_sensor.color()
-        r_col = r_sensor.color()
-        c_col = c_sensor.color()
-
-        color = str(c_col)[6:]
-        # print(color)
+        # color = str(c_col)[6:]
+        color = c_col
+        # logger.debug(color)
         if color in ["RED", "YELLOW", "GREEN", "BLUE"]:
             db.stop()
             db.straight(-10)
@@ -260,3 +300,5 @@ if __name__ == "__main__":
             pick_up()
             colors[color] = curr_angle
             curr_angle += 1
+
+        caseid += 1

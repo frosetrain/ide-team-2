@@ -1,0 +1,23 @@
+Refactoring our code
+Using Object-Oriented Programming™
+
+Attributes:
+angle, straight_begin, buffer ...
+
+The main loop will read these attributes and control the robot accordingly.
+
+All robot-controlling code should be in the main loop and not in other functions.
+
+Look at the code and identify all corners that are hardcoded to have different behaviour.
+
+Use some sort of Python script to call the main function and see whether the results are the same as before.
+
+Add good Python practices like docstrings and type hints.
+
+Places where robot behaviour is hardcoded:
+
+* Places where straights start
+* Slow and speed areas
+* Places to deposit each color
+
+We can add different buffers depending on whether the turn is 0
