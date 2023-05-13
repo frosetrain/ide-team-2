@@ -116,7 +116,6 @@ TURNS: list[Turn] = [
 
 # List of turns where cubes can be deposited
 DEPOSITS = {21: "GREEN", 23: "RED", 29: "BLUE", 31: "YELLOW"}
-DEPOSITS[4] = "RED"
 
 # FIXME: test reading
 instructions = open("cases.csv", "r")
