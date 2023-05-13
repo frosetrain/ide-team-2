@@ -1,7 +1,8 @@
-from .parameters import Color, Direction, Port
+from logging import FileHandler
+
 import colorlog
 
-from logging import FileHandler
+from .parameters import Color, Direction, Port
 
 handler = colorlog.StreamHandler()
 handler.setFormatter(colorlog.ColoredFormatter("%(log_color)s%(message)s"))

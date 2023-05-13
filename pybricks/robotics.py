@@ -1,8 +1,9 @@
-from .parameters import Stop
-from .pupdevices import Motor
+from logging import FileHandler
 
 import colorlog
-from logging import FileHandler
+
+from .parameters import Stop
+from .pupdevices import Motor
 
 handler = colorlog.StreamHandler()
 handler.setFormatter(colorlog.ColoredFormatter("%(log_color)s%(message)s"))
