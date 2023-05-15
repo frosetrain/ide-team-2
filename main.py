@@ -1,35 +1,14 @@
 """This is the code for IDE Team 2!!!!"""
 
-# FIXME: Remove unavailable imports and logging on SPIKE Prime
-
-from csv import DictReader
-from logging import FileHandler
-from os import system
-from typing import Optional
-
-import colorlog
-
 from pybricks.hubs import PrimeHub
-from pybricks.parameters import Color, Colors, Direction, Port, Stop
+from pybricks.parameters import Color, Direction, Port, Stop
 from pybricks.pupdevices import ColorSensor, Motor
 from pybricks.robotics import DriveBase
-
-handler = colorlog.StreamHandler()
-handler.setFormatter(colorlog.ColoredFormatter("%(log_color)s%(message)s"))
-filehandle = FileHandler("first.log")
-
-logger = colorlog.getLogger(__name__)
-logger.setLevel("DEBUG")
-logger.addHandler(handler)
-logger.addHandler(filehandle)
-
-system("clear")
-
 
 L_CO_BLACK = 12
 R_CO_BLACK = 12
 L_CO_WHITE = 89
-R_CO_WHITE = 82
+R_CO_WHITE = 89
 
 # Hardware definitions
 hub = PrimeHub()
@@ -117,15 +96,6 @@ TURNS: list[Turn] = [
 # List of turns where cubes can be deposited
 DEPOSITS = {21: "GREEN", 23: "RED", 29: "BLUE", 31: "YELLOW"}
 
-# FIXME: test reading
-instructions = open("cases.csv", "r")
-reader = DictReader(instructions)
-testcases = []
-for row in reader:
-    testcases.append(row)
-caseid = 0
-# FIXME:
-
 # Storing where each cube is in the sorter
 sort_slots = {
     "RED": 1,
@@ -145,77 +115,61 @@ speed = 240  # The speed of the robot
 sort_motor.run_target(100, -15)
 
 while True:
-    # FIXME: test injection begins here
-    try:
-        case = testcases[caseid]
-    except IndexError:
-        logger.debug("done")
-        exit()
-    logger.info(case)
-    l_co = float(case["l_ref"])
-    r_co = float(case["r_ref"])
-    l_col = Colors[case["l_col"]]
-    r_col = Colors[case["r_col"]]
-    c_col = case["c_col"]
-    # logger.debug(l_co, r_co, l_col, r_col, c_col)
-
-    # l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
-    # r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
-    # l_col = l_sensor.color()
-    # r_col = r_sensor.color()
-    # c_col = c_sensor.color()
-    # FIXME:
+    l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
+    r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
+    l_col = l_sensor.color()
+    r_col = r_sensor.color()
+    c_col = c_sensor.color()
+    
+    # print(l_co, r_co, l_col, r_col, c_col)
 
     if sort_motor.angle() < 0 or sort_motor.angle() > 359:
         sort_motor.reset_angle(sort_motor.angle() % 360)
 
     funny_turn = l_co > 0.6 and r_co < 0.08 and on_straight and straight_count > 1000
     if funny_turn:
-        logger.debug("funny right turn!?!?!? ")
+        print("funny right turn!?!?!? ")
         on_straight = False
         straight_count = 0
 
     # Detecting turns (including funny ones)
-    if l_co + r_co < 0.24 or funny_turn:
+    if l_co + r_co < 0.2 or funny_turn:
         turn = TURNS[turn_number]
-        # FIXME: hub.display.number(i)
+        db.straight(50, then=Stop.NONE)
+        hub.display.number(i)
 
         if turn.angle != 0:  # A real turn
-            logger.info("turning... " + str(turn_number))
+            print("turning... " + str(turn_number))
             db.stop()
             db.turn(turn.angle)
         else:  # Continue straight
             db.straight(10, then=Stop.NONE)
-            logger.info("unturn... " + str(turn_number))
+            print("unturn... " + str(turn_number))
 
         if turn.speed is not None:  # If a new speed is specified
             speed = turn.speed
             db.settings(straight_speed=speed)
-            logger.debug(f"new speed {speed}")
+            print(f"new speed {speed}")
 
         if turn.begin_straight:
-            logger.debug("start the straight")
+            print("start the straight")
             straight_count = 0
             on_straight = True
 
         if turn_number in DEPOSITS.keys():  # If a cube should be deposited here
-            logger.info("Deposit")
             db.straight(100)
             db.turn(180)
             angle_difference = (
                 sort_slots[DEPOSITS[turn_number]] * 90 - sort_motor.angle() + 10
             )
             if angle_difference < 0:
-                rotation = angle_difference + 360
-            else:
-                rotation = angle_difference
+                angle_difference += 360
             sort_motor.run_angle(100, angle_difference)
             db.straight(75)
             sort_motor.run_angle(100, 40)
             sort_slots[DEPOSITS[turn_number]] = -1
 
         turn_number += 1
-        caseid += 1  # FIXME: remove test cases
         continue  # we go back to the top of while True to get new sensor values
 
     # Handling cases where there are no cubes on a colored floor
@@ -239,27 +193,24 @@ while True:
     sensi = 0.69
     if speed >= 240:
         sensi = 0.5
-    # logger.debug(sensi)
     db.drive(speed, (l_co - r_co) * speed * sensi)
 
     # Incrementing straight_count if needed
     if on_straight:
         straight_count += 1
-        # logger.debug(straight)
+        # print(straight)
 
     # Picking up cubes if we see any
     # TODO: Only pick up cubes if it's in a valid position
-    # FIXME: color = str(c_col)[6:]
-    color = c_col
+    color = str(c_col)[6:]
+    #color = c_col
     if color in ["RED", "YELLOW", "GREEN", "BLUE"]:
         db.stop()
         db.straight(-10)
         db.turn(180)
-        logger.info("Pick up")
+        # print("Pick up")
         sort_motor.run_angle(250, 40)
         db.straight(-155)
         sort_motor.run_angle(250, 50)
         sort_slots[color] = current_slot
         current_slot += 1
-
-    caseid += 1
