@@ -27,7 +27,7 @@ sort_motor = Motor(
 l_sensor = ColorSensor(Port.F)
 r_sensor = ColorSensor(Port.B)
 c_sensor = ColorSensor(Port.D)
-db = DriveBase(left_motor, right_motor, 88, 207)
+db = DriveBase(left_motor, right_motor, 88, 213)
 
 c_sensor.detectable_colors(
     (Color.RED, Color.YELLOW, Color.GREEN, Color.BLUE, Color.BLACK, Color.NONE)
@@ -146,9 +146,12 @@ while True:
         print(turn_frame)
 
         if turn.angle != 0:  # A real turn
+            # db.stop()
+            # db.curve(50, turn.angle, then=Stop.COAST)
+
             db.straight(50, then=Stop.NONE)
             print("turning... " + str(turn_number))
-            # db.stop()
+            db.stop()
             db.turn(turn.angle)
         else:  # Continue straight
             db.straight(25, then=Stop.NONE)
@@ -173,9 +176,9 @@ while True:
             )
             if angle_difference < 0:
                 angle_difference += 360
-            sort_motor.run_angle(100, angle_difference)
+            sort_motor.run_angle(250, angle_difference)
             db.straight(75)
-            sort_motor.run_angle(100, 40)
+            sort_motor.run_angle(250, 40)
             sort_slots[DEPOSITS[turn_number]] = -1
 
         turn_number += 1
