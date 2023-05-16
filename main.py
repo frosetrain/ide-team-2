@@ -4,6 +4,9 @@ from pybricks.hubs import PrimeHub
 from pybricks.parameters import Color, Direction, Port, Stop
 from pybricks.pupdevices import ColorSensor, Motor
 from pybricks.robotics import DriveBase
+from pybricks.tools import StopWatch
+
+watch = StopWatch()
 
 L_CO_BLACK = 12
 R_CO_BLACK = 12
@@ -67,8 +70,8 @@ TURNS: list[Turn] = [
     Turn(90),  # 6
     Turn(0),  # 7
     Turn(0),  # 8
-    Turn(45, 240, True),  # 9, back to normal speed and start straight
-    Turn(90),  # 10, funny right turn
+    Turn(45, 300, True),  # 9, back to normal speed and start straight
+    Turn(90, 299),  # 10, funny right turn
     Turn(0),  # 11
     Turn(90),  # 12
     Turn(45, 150),  # 13, back to slow
@@ -82,8 +85,8 @@ TURNS: list[Turn] = [
     Turn(0),  # 21
     Turn(90),  # 22
     Turn(0),  # 23
-    Turn(45, 240, True),  # 24, speed up and start second straight
-    Turn(90),  # 25, funny right turn
+    Turn(45, 300, True),  # 24, speed up and start the second straight
+    Turn(90, 240),  # 25, funny right turn
     Turn(0),  # 26
     Turn(90),  # 27
     Turn(45, 150),  # 28, enter final slow zone
@@ -105,14 +108,17 @@ sort_slots = {
 }
 current_slot = 0  # The currently open sort-slot
 turn_number = 0  # This variable was previously called i
-straight_count = 0  # Counting how long we are on a straight
+turn_frame = 0  # The frame where the robot last turned
 on_straight = False  # Whether we are on a straight
 colored_floor_count = (
     0  # Counting how long we are on a colored area without encountering a cube
 )
 speed = 240  # The speed of the robot
+frame_id = 0  # How many times the while loop has run
 
+# sort_motor.reset_angle()
 sort_motor.run_target(100, -15)
+print(sort_motor.angle())
 
 while True:
     l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
@@ -126,7 +132,7 @@ while True:
     if sort_motor.angle() < 0 or sort_motor.angle() > 359:
         sort_motor.reset_angle(sort_motor.angle() % 360)
 
-    funny_turn = l_co > 0.6 and r_co < 0.08 and on_straight and straight_count > 1000
+    funny_turn = l_co > 0.6 and r_co < 0.08 and on_straight and frame_id - turn_frame > 1000
     if funny_turn:
         print("funny right turn!?!?!? ")
         on_straight = False
@@ -135,15 +141,17 @@ while True:
     # Detecting turns (including funny ones)
     if l_co + r_co < 0.2 or funny_turn:
         turn = TURNS[turn_number]
-        db.straight(50, then=Stop.NONE)
-        hub.display.number(i)
+        # hub.display.number(turn_number)
+        turn_frame = frame_id
+        print(turn_frame)
 
         if turn.angle != 0:  # A real turn
+            db.straight(50, then=Stop.NONE)
             print("turning... " + str(turn_number))
-            db.stop()
+            # db.stop()
             db.turn(turn.angle)
         else:  # Continue straight
-            db.straight(10, then=Stop.NONE)
+            db.straight(25, then=Stop.NONE)
             print("unturn... " + str(turn_number))
 
         if turn.speed is not None:  # If a new speed is specified
@@ -153,8 +161,9 @@ while True:
 
         if turn.begin_straight:
             print("start the straight")
-            straight_count = 0
             on_straight = True
+        else:
+            on_straight = False
 
         if turn_number in DEPOSITS.keys():  # If a cube should be deposited here
             db.straight(100)
@@ -178,6 +187,7 @@ while True:
         and l_col != Color.WHITE
         and r_col != Color.NONE
         and r_col != Color.WHITE
+        and False
     ):
         colored_floor_count += 1
     else:
@@ -189,28 +199,42 @@ while True:
         db.straight(50)
         turn_number += 0
 
-    # Line tracking
-    sensi = 0.69
-    if speed >= 240:
-        sensi = 0.5
-    db.drive(speed, (l_co - r_co) * speed * sensi)
-
-    # Incrementing straight_count if needed
-    if on_straight:
-        straight_count += 1
-        # print(straight)
-
     # Picking up cubes if we see any
     # TODO: Only pick up cubes if it's in a valid position
     color = str(c_col)[6:]
     #color = c_col
     if color in ["RED", "YELLOW", "GREEN", "BLUE"]:
-        db.stop()
-        db.straight(-10)
-        db.turn(180)
+        # db.stop()
+        # db.straight(-10)
+        db.turn(180, wait=False)
         # print("Pick up")
         sort_motor.run_angle(250, 40)
+        while not db.done():
+            pass
         db.straight(-155)
         sort_motor.run_angle(250, 50)
         sort_slots[color] = current_slot
         current_slot += 1
+        continue
+
+    # Line tracking
+    if speed < 240:
+        sensi = 0.69
+    elif speed == 240:
+        sensi = 0.5
+    elif speed > 240:
+        sensi = 0.4
+    
+    if speed >= 300:  # accelerate smoothly
+        if frame_id - turn_frame < 500:
+            actual_speed = 100
+        else:
+            actual_speed = min((frame_id - turn_frame - 500) * 0.5 + 100, speed)
+        # sensi = max((speed - actual_speed) / 800 + 0.3, 0.3)
+    else:
+        actual_speed = speed
+
+    db.drive(actual_speed, (l_co - r_co) * actual_speed * sensi)
+    
+    # Incrementing the frame_id
+    frame_id += 1
