@@ -63,53 +63,68 @@ class Turn:
 TURNS: list[Turn] = [
     Turn(0, 240),  # 0, starting with normal speed
     Turn(90),  # 1
-    Turn(-90),  # 2
-    Turn(45, 150),  # 3, slow speed
+    Turn(-90, 500),  # 2
+    Turn(45, 140),  # 3, slow speed
     Turn(0),  # 4
-    Turn(0),  # 5
-    Turn(90),  # 6
-    Turn(0),  # 7
-    Turn(0),  # 8
-    Turn(45, 300, True),  # 9, back to normal speed and start straight
-    Turn(90, 299),  # 10, funny right turn
-    Turn(0),  # 11
-    Turn(90),  # 12
-    Turn(45, 150),  # 13, back to slow
+    Turn(90),  # 5
+    # Turn(0),  # 6
+    Turn(0),  # 6
+    Turn(45, 500, True),  # 7, back to normal speed and start straight
+    Turn(90, 499),  # 8, funny right turn
+    Turn(0),  # 9
+    Turn(90),  # 10
+    Turn(45, 140),  # 11, back to slow
+    # Turn(0),  # 12
+    Turn(0),  # 12
+    Turn(90),  # 13
+    # Turn(0),  # 15
     Turn(0),  # 14
-    Turn(0),  # 15
-    Turn(90),  # 16
+    Turn(45, 500),  # 15, enter high speed and zoom to the other side of the map
+    Turn(45, 140),  # 16, activate slow mode
     Turn(0),  # 17
-    Turn(0),  # 18
-    Turn(45, 300),  # 19, enter high speed and zoom to the other side of the map
-    Turn(45, 150),  # 20, activate slow mode
-    Turn(0),  # 21
-    Turn(90),  # 22
-    Turn(0),  # 23
-    Turn(45, 300, True),  # 24, speed up and start the second straight
-    Turn(90, 240),  # 25, funny right turn
-    Turn(0),  # 26
-    Turn(90),  # 27
-    Turn(45, 150),  # 28, enter final slow zone
-    Turn(0),  # 29
-    Turn(90),  # 30
-    Turn(0),  # 31
-    Turn(45, 300),  # 32, yay we're done
+    Turn(90),  # 18
+    Turn(0),  # 19
+    Turn(45, 500, True),  # 20, speed up and start the second straight
+    Turn(90, 499),  # 21, funny right turn
+    Turn(0),  # 22
+    Turn(90),  # 23
+    Turn(45, 140),  # 24, enter final slow zone
+    Turn(0),  # 25
+    Turn(90),  # 26
+    Turn(0),  # 27
+    # Turn(45, 500),  # 28, yay we're done
 ]
 
 # List of turns where cubes can be deposited
-DEPOSITS = {21: "GREEN", 23: "RED", 29: "BLUE", 31: "YELLOW"}
+DEPOSITS = {17: "GREEN", 19: "RED", 25: "BLUE", 27: "YELLOW"}
 
 # Storing where each cube is in the sorter
 sort_slots = {
-    "RED": 1,
-    "YELLOW": 3,
-    "GREEN": 2,
-    "BLUE": 0,
+    "RED": -1,
+    "YELLOW": 0,
+    "GREEN": -1,
+    "BLUE": -1,
 }
-current_slot = 0  # The currently open sort-slot
-turn_number = 0  # This variable was previously called i
+
+occupied = {
+    0: True,
+    1: False,
+    2: False,
+    3: False,
+}
+
+BLUE_LIST: list[Turn] = [Turn(-90), Turn(0), Turn(-45, 500, True)]
+
+RED_LIST: list[Turn] = [Turn(-45, 140), Turn(0)]
+
+GREEN_LIST: list[Turn] = [Turn(0)]
+
+current_slot = 1  # The currently open sort-slot
+turn_number = 16  # This variable was previously called i
 turn_frame = 0  # The frame where the robot last turned
 on_straight = False  # Whether we are on a straight
+last_non_white = "NONE"
+remainder = False
 colored_floor_count = (
     0  # Counting how long we are on a colored area without encountering a cube
 )
@@ -117,29 +132,89 @@ speed = 240  # The speed of the robot
 frame_id = 0  # How many times the while loop has run
 
 # sort_motor.reset_angle()
-sort_motor.run_target(100, -15)
+sort_motor.run_target(100, 75)
 print(sort_motor.angle())
 
+
+def deposit():
+    # db.straight(120)
+    # db.turn(180)
+    current_slot = sort_slots[last_non_white]
+    print("WAS: ", sort_slots)
+    print(current_slot)
+    angle_difference = ((current_slot) * 90) - (sort_motor.angle()) + 10
+    if angle_difference < 0:
+        angle_difference += 360
+        print(angle_difference)
+
+    db.straight(-25)
+    sort_motor.run_angle(200, angle_difference)
+
+    # sort_motor.run_angle(200, angle_difference)
+
+    db.straight(95)
+    sort_motor.run_angle(200, 40)
+    if sort_motor.angle() < 0 or sort_motor.angle() > 359:
+        sort_motor.reset_angle(sort_motor.angle() % 360)
+
+    # Reset to lowest slot:
+
+    occupied[sort_slots[last_non_white]] = False
+    sort_slots[last_non_white] = -1
+
+    for slot in occupied:
+        print("DEBUG:", slot)
+        if not occupied[slot]:
+            print("YES")
+            current_slot = slot
+            break
+        else:
+            print("NO")
+
+    print("NEW SLOT:", current_slot)
+
+    angle_difference = (current_slot * 90) - (sort_motor.angle())
+    # print(angle_difference, sort_motor.angle())
+    if angle_difference < 0:
+        angle_difference += 360
+        print(angle_difference)
+
+    sort_motor.run_angle(200, angle_difference)
+
+    print("NOW: ", sort_slots)
+    print("NOW:", occupied)
+    current_slot -= 1
+
+
 while True:
+    # print(current_slot)
     l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
     r_co = (r_sensor.reflection() - R_CO_BLACK) / R_CO_WHITE
     l_col = l_sensor.color()
     r_col = r_sensor.color()
     c_col = c_sensor.color()
-    
+    hub.display.number(turn_number)
+
+    # if on_straight:
     # print(l_co, r_co, l_col, r_col, c_col)
 
     if sort_motor.angle() < 0 or sort_motor.angle() > 359:
         sort_motor.reset_angle(sort_motor.angle() % 360)
 
-    funny_turn = l_co > 0.6 and r_co < 0.08 and on_straight and frame_id - turn_frame > 1000
+    funny_turn = (
+        ((l_co > 0.6 and r_co < 0.07) or (l_co < 0.07 and r_co > 0.6))
+        and on_straight
+        and frame_id - turn_frame > 500
+    )
+
     if funny_turn:
-        print("funny right turn!?!?!? ")
+        print("funny turn!?!?!? ")
         on_straight = False
         straight_count = 0
 
     # Detecting turns (including funny ones)
-    if l_co + r_co < 0.2 or funny_turn:
+    if l_co + r_co < 0.1 or funny_turn:
+        print("SLOT IS:", current_slot)
         turn = TURNS[turn_number]
         # hub.display.number(turn_number)
         turn_frame = frame_id
@@ -149,37 +224,28 @@ while True:
             # db.stop()
             # db.curve(50, turn.angle, then=Stop.COAST)
 
-            db.straight(50, then=Stop.NONE)
-            print("turning... " + str(turn_number))
+            db.straight(40, then=Stop.NONE)
+            # print("turning... " + str(turn_number))
             db.stop()
             db.turn(turn.angle)
         else:  # Continue straight
             db.straight(25, then=Stop.NONE)
-            print("unturn... " + str(turn_number))
+            # print("unturn... " + str(turn_number))
 
         if turn.speed is not None:  # If a new speed is specified
             speed = turn.speed
             db.settings(straight_speed=speed)
-            print(f"new speed {speed}")
+            # print(f"new speed {speed}")
 
         if turn.begin_straight:
-            print("start the straight")
+            # print("start the straight")
             on_straight = True
         else:
             on_straight = False
-
-        if turn_number in DEPOSITS.keys():  # If a cube should be deposited here
-            db.straight(100)
-            db.turn(180)
-            angle_difference = (
-                sort_slots[DEPOSITS[turn_number]] * 90 - sort_motor.angle() + 10
-            )
-            if angle_difference < 0:
-                angle_difference += 360
-            sort_motor.run_angle(250, angle_difference)
-            db.straight(75)
-            sort_motor.run_angle(250, 40)
-            sort_slots[DEPOSITS[turn_number]] = -1
+        if turn_number == 20:
+            print(sort_slots)
+        # if turn_number in DEPOSITS.keys():  # If a cube should be deposited here
+        # deposit()
 
         turn_number += 1
         continue  # we go back to the top of while True to get new sensor values
@@ -190,47 +256,101 @@ while True:
         and l_col != Color.WHITE
         and r_col != Color.NONE
         and r_col != Color.WHITE
-        and False
     ):
         colored_floor_count += 1
+        last_non_white = str(l_col)[6:]
     else:
         colored_floor_count = 0
 
-    if colored_floor_count >= 80 and turn_number > 1:
+    if colored_floor_count >= 250 and turn_number > 1:
         colored_floor_count = 0
         db.turn(180)
+        if turn_number > 16 and sort_slots[last_non_white] != -1:
+            deposit()
+            current_slot -= 1
         db.straight(50)
-        turn_number += 0
 
     # Picking up cubes if we see any
     # TODO: Only pick up cubes if it's in a valid position
     color = str(c_col)[6:]
-    #color = c_col
+    # color = c_col
     if color in ["RED", "YELLOW", "GREEN", "BLUE"]:
-        # db.stop()
-        # db.straight(-10)
-        db.turn(180, wait=False)
-        # print("Pick up")
-        sort_motor.run_angle(250, 40)
-        while not db.done():
-            pass
-        db.straight(-155)
-        sort_motor.run_angle(250, 50)
-        sort_slots[color] = current_slot
-        current_slot += 1
+        if color == last_non_white:
+            db.turn(178, wait=False)
+        else:
+            # db.stop()
+            # db.straight(-10)
+            db.turn(178, wait=False)
+            print("Pick up")
+            # current_slot -= 1
+            print("WAS: ", current_slot)
+
+            sort_motor.run_angle(200, 40)
+            while not db.done():
+                pass
+            db.straight(-150)
+            sort_motor.run_angle(200, 50)
+            print(color)
+            sort_slots[color] = current_slot
+            occupied[current_slot] = True
+            db.straight(150)
+
+            current_slot = 0
+            for slot in occupied:
+                print("DEBUG:", slot)
+                if not occupied[slot]:
+                    print("YES")
+                    current_slot = slot
+                    break
+                else:
+                    print("NO")
+                    current_slot += 1
+
+            print("NEW SLOT:", current_slot)
+            print("NOW: ", sort_slots)
+            print("NOW:", occupied)
+
+        if turn_number > 16 and sort_slots[last_non_white] != -1:
+            deposit()
+
         continue
+
+    if turn_number == 28 and remainder == False:
+        print("NOW: ", sort_slots)
+        if not (sort_slots["GREEN"] == -1):
+            print("GREEEEEEEEEEN")
+            TURNS = TURNS + BLUE_LIST
+        else:
+            print("no green L")
+            TURNS += [Turn(45, 500, True)]
+
+        TURNS += [Turn(-90, 499), Turn(0), Turn(-90)]
+
+        if not (sort_slots["RED"] == -1):
+            print("REDDDDDDDDDDD")
+            TURNS = TURNS + RED_LIST
+            if sort_slots["BLUE"] != 1:
+                print("BLUE")
+                TURNS += [Turn(-90, 140)]
+                TURNS += [Turn(0)]
+        if not (sort_slots["BLUE"] == -1):
+            print("BLUE")
+            TURNS += [Turn(45, 140)]
+            TURNS += [Turn(0)]
+
+        remainder = True
 
     # Line tracking
     if speed < 240:
         sensi = 0.69
     elif speed == 240:
-        sensi = 0.5
-    elif speed > 240:
         sensi = 0.4
-    
-    if speed >= 300:  # accelerate smoothly
+    elif speed > 240:
+        sensi = 0.3
+
+    if speed >= 400:  # accelerate smoothly
         if frame_id - turn_frame < 500:
-            actual_speed = 100
+            actual_speed = 200
         else:
             actual_speed = min((frame_id - turn_frame - 500) * 0.5 + 100, speed)
         # sensi = max((speed - actual_speed) / 800 + 0.3, 0.3)
@@ -238,6 +358,6 @@ while True:
         actual_speed = speed
 
     db.drive(actual_speed, (l_co - r_co) * actual_speed * sensi)
-    
+
     # Incrementing the frame_id
     frame_id += 1
