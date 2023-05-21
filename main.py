@@ -63,13 +63,13 @@ class Turn:
 TURNS: list[Turn] = [
     Turn(0, 240),  # 0, starting with normal speed
     Turn(90),  # 1
-    Turn(0), #2
-    #collect first ferti
-    Turn(0), #3
-    Turn(0), #4
-    Turn(0), #5
-    Turn(0), #6
-    #collect second ferti
+    Turn(0),  # 2
+    # collect first ferti
+    Turn(0),  # 3
+    Turn(0),  # 4
+    Turn(0),  # 5
+    Turn(0),  # 6
+    # collect second ferti
     # At this moment, we know exactly where on the West side we need to go
 ]
 
@@ -103,12 +103,12 @@ sort_motor.run_target(100, -15)
 print(sort_motor.angle())
 
 
-
 def charge():
     db.straight(200)
     db.turn(180)
     wait(2500)
     db.straight(160)
+
 
 while True:
     l_co = (l_sensor.reflection() - L_CO_BLACK) / L_CO_WHITE
@@ -157,15 +157,15 @@ while True:
             on_straight = True
         else:
             on_straight = False
-        
+
         turn_number += 1
-        
+
     # Pick up
     color = str(c_col)[6:]
 
     if turn_number == 3 or turn_number == 6:
         print("PICKING")
-        
+
         db.straight(20)
         color = str(c_sensor.color())[6:]
         db.turn(180, wait=False)
@@ -205,7 +205,7 @@ while True:
                 TURNS.extend([Turn(90, 499), Turn(45, 140), Turn(0)])
                 cubes -= 1
                 fert_is_green = False
-                
+
                 if fert_is_red:
                     if sort_slots[0] == "RED":
                         slot_order.append(0)
@@ -216,7 +216,6 @@ while True:
                     TURNS.extend([Turn(45, 500, True)])
                     fert_is_red = False
 
-                    
                 else:
                     TURNS.extend([Turn(-45, 500, True)])
 
@@ -227,9 +226,8 @@ while True:
                     slot_order.append(1)
                 TURNS.extend([Turn(90, 499), Turn(-45, 140), Turn(0)])
                 fert_is_red = False
-                    
+
                 TURNS.extend([Turn(90, 499)])
-            
 
             if toCharge:
                 TURNS.extend([Turn(-90, 240)])
@@ -244,9 +242,8 @@ while True:
                     TURNS.extend([Turn(90, 499), Turn(45, 140), Turn(0)])
                     cubes -= 1
                     fert_is_blue = False
-                
-                if cubes == 0:
 
+                if cubes == 0:
                     TURNS.extend([Turn(-45, 500, True), Turn(-90, 499), Turn(90, 240)])
                 else:
                     if sort_slots[0] == "GREEN":
@@ -256,12 +253,11 @@ while True:
                     TURNS.extend([Turn(90, 499), Turn(0)])
                     fert_is_yellow = False
                     TURNS.extend([Turn(45, 500, True), Turn(-90, 499), Turn(90, 240)])
-                    
-            
+
             isPicked = True
 
         turn_number += 1
-        
+
         current_slot += 1
 
     if color == "BLACK" and turn_number > 8:
@@ -274,9 +270,7 @@ while True:
                 slot = item
                 print(sort_slots[0], "is in ", slot)
                 break
-        angle_difference = (
-            slot * 90 - sort_motor.angle() + 12
-        )
+        angle_difference = slot * 90 - sort_motor.angle() + 12
         if angle_difference < 0:
             angle_difference += 360
             print(angle_difference)
@@ -300,34 +294,34 @@ while True:
         current_slot += 1
     if turn_number == len(TURNS) and turn_number > 9:
         toCharge = True
-    
+
     if turn_number == len(TURNS) and toCharge:
         print("i charge")
         charge()
         toCharge = False
-        TURNS.extend([
-    Turn(0), 
-    Turn(-90), 
-    Turn(-90, 499),
-    Turn(45, 145),
-    Turn(0),
-    Turn(90),
-    Turn(0),
-    Turn(45, 500, True),
-    Turn(90, 499),
-    Turn(0),
-    Turn(90),
-    Turn(45, 145),
-    Turn(0),
-    Turn(90),
-    Turn(0),
-    ])
-
-
+        TURNS.extend(
+            [
+                Turn(0),
+                Turn(-90),
+                Turn(-90, 499),
+                Turn(45, 145),
+                Turn(0),
+                Turn(90),
+                Turn(0),
+                Turn(45, 500, True),
+                Turn(90, 499),
+                Turn(0),
+                Turn(90),
+                Turn(45, 145),
+                Turn(0),
+                Turn(90),
+                Turn(0),
+            ]
+        )
 
     if turn_number == 6 and isPicked == False:
         continue
-                
+
     # Line tracking
     if speed < 240:
         sensi = 0.69
@@ -335,7 +329,7 @@ while True:
         sensi = 0.4
     elif speed > 240:
         sensi = 0.3
-    
+
     if speed >= 500:  # accelerate smoothly
         if frame_id - turn_frame < 500:
             actual_speed = 200
@@ -346,7 +340,6 @@ while True:
         actual_speed = speed
 
     db.drive(actual_speed, (l_co - r_co) * actual_speed * sensi)
-    
+
     # Incrementing the frame_id
     frame_id += 1
-    
